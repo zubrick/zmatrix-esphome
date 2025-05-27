@@ -20,9 +20,8 @@ globals:
 i2c:
 
 external_components:
-  - source:
-      type: local
-      path: "components"
+  - source: github://zubrick/zmatrix-esphome@main
+    components: [ rtttl ]
 
 ds3231:
   id: ds3231_time
@@ -349,24 +348,24 @@ display:
       }
 
 animation:
-  - file: "animations/aurora-levin.gif"
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/animations/aurora-levin.gif"
     id: aurora
     resize: 16x16
     type: RGB565
-  - file: "animations/zreclusive.gif"
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/animations/zreclusive.gif"
     id: emoji
     resize: 16x16
     type: RGB565
     transparency: chroma_key
-  - file: "animations/color1wave.gif"
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/animations/color1wave.gif"
     id: colorwave
     resize: 16x16
     type: RGB565
-  - file: "animations/fractal.gif"
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/animations/fractal.gif"
     id: fractal
     resize: 16x16
     type: RGB565
-  - file: "animations/warp.gif"
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/animations/warp.gif"
     id: warp
     resize: 16x16
     type: RGB565
