@@ -3,8 +3,6 @@
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
-  includes:
-    - "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/src/zmatrix.h"
   on_boot:
     - priority: 500
       then:
@@ -20,13 +18,17 @@ globals:
 i2c:
 
 external_components:
-  - source: github://zubrick/zmatrix-esphome@main
-    components: [ ds3231 ]
+  - source: zmatrix-esphome/components
+  #- source: github://zubrick/zmatrix-esphome@main
+  #  components: [ ds3231 ]
 
 ds3231:
   id: ds3231_time
   time_id: sntp_time
   update_interval: 240min
+
+zmatrix:
+  id: zmatrix_id
 
 sensor:
   - platform: adc
@@ -40,7 +42,7 @@ sensor:
     filters:
       - lambda:
           id(lightsensorvolts).publish_state(x);
-          return mapfloat(x, id(voltage_empty).state, id(voltage_full).state, 12, 100);
+          return id(zmatrix_id).mapfloat(x, id(voltage_empty).state, id(voltage_full).state, 12, 100);
       - clamp:
           min_value: 12
           max_value: 100
@@ -92,7 +94,7 @@ output:
       then:
         - lambda:
             id(nfred).publish_state(state);
-            id(nfhue).publish_state(RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
+            id(nfhue).publish_state(id(zmatrix_id).RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
   - platform: template
     id: fgreen
     type: float
@@ -100,7 +102,7 @@ output:
       then:
         - lambda:
             id(nfgreen).publish_state(state);
-            id(nfhue).publish_state(RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
+            id(nfhue).publish_state(id(zmatrix_id).RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
   - platform: template
     id: fblue
     type: float
@@ -108,7 +110,7 @@ output:
       then:
         - lambda:
             id(nfblue).publish_state(state);
-            id(nfhue).publish_state(RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
+            id(nfhue).publish_state(id(zmatrix_id).RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
 
 select:
   - platform: template
@@ -129,15 +131,8 @@ select:
     on_value:
       then:
         - lambda: |-
-            previousTime = 0;
-            if (id(animationselect).active_index() > 2) {
-              gifanimstart = 0;
-              gifanim = 1;
-            } else {
-              gifanim = 0;
-              gifanimstart = 0;
-              gifanimPrevMode = id(animationselect).active_index().value();
-            }
+            id(zmatrix_id).select_index(id(animationselect).active_index().value());
+
 
 number:
   - platform: template
@@ -250,12 +245,12 @@ display:
     update_interval: 16ms
     auto_clear_enabled: false
     pixel_mapper: |-
-      return XY(x, y);
+      return id(zmatrix_id).XY(x, y);
     lambda: |-
       if (id(esp_started) == 0) {
         it.fill(COLOR_OFF);
-      } else if (gifanim != 0) {
-        if (gifanimstart == 0) {
+      } else if (id(zmatrix_id).gifanim != 0) {
+        if (id(zmatrix_id).gifanimstart == 0) {
           it.fill(COLOR_OFF);
           if (id(animationselect).active_index() == 3) {
             it.image(0, 0, id(aurora), COLOR_ON, COLOR_OFF);
@@ -268,18 +263,18 @@ display:
           } else if (id(animationselect).active_index() == 7) {
             it.image(0, 0, id(warp), COLOR_ON, COLOR_OFF);
           }
-          gifanimstart = millis();
-          gifanimlastframe = millis();
+          id(zmatrix_id).gifanimstart = millis();
+          id(zmatrix_id).gifanimlastframe = millis();
         } else {
-          if (id(gif_animation_time).state > 0 && gifanimstart + 1000 * id(gif_animation_time).state < millis()) {
-            gifanim = 0;
-            gifanimstart = 0;
+          if (id(gif_animation_time).state > 0 && id(zmatrix_id).gifanimstart + 1000 * id(gif_animation_time).state < millis()) {
+            id(zmatrix_id).gifanim = 0;
+            id(zmatrix_id).gifanimstart = 0;
             auto call = id(animationselect).make_call();
-            auto option = id(animationselect).at((uint)gifanimPrevMode);
+            auto option = id(animationselect).at((uint)id(zmatrix_id).gifanimPrevMode);
             call.set_option(option.value());
             call.perform();
             //ESP_LOGD("display", "animation finished");
-          } else if (gifanimlastframe + 50 < millis()) {
+          } else if (id(zmatrix_id).gifanimlastframe + 50 < millis()) {
             //ESP_LOGD("display", "frame");
             if (id(animationselect).active_index() == 3) {
               id(aurora).next_frame();
@@ -297,14 +292,14 @@ display:
               id(warp).next_frame();
               it.image(0, 0, id(warp), COLOR_ON, COLOR_OFF);
             }
-            gifanimlastframe = millis();
+            id(zmatrix_id).gifanimlastframe = millis();
           }
         }
       } else {
         Color timeColor = Color(240, 240 ,240);
         uint8_t val = (int)(64 + (float)millis()/(float)(id(colorspeed).state*10))%256;
         auto time = id(ds3231_time).get_time();
-
+        //ESP_LOGD("display", "frame");
         if (id(forcedcolor).current_values.is_on()) {
           val = (int)(id(nfhue).state*256/360);
         }
@@ -312,14 +307,14 @@ display:
           id(currenthue).publish_state(val*360/256);
         }
         if (time.day == 1 && time.month == 8) {
-          nationalDay();
+          id(zmatrix_id).nationalDay();
         } else {
           if (id(animationselect).active_index() == 0) {
-            randColor(val, id(variance).state, id(animspeed).state*1000);
+            id(zmatrix_id).randColor(val, id(variance).state, id(animspeed).state*1000);
           } else if (id(animationselect).active_index() == 1) {
-            matrix();
+            id(zmatrix_id).matrix();
           } else if (id(animationselect).active_index() == 2) {
-            fire();
+            id(zmatrix_id).fire();
           }
         }
 
@@ -335,37 +330,35 @@ display:
         if (id(currentbrightness).state != (brightness*100)) {
           id(currentbrightness).publish_state(brightness*100);
         }
-        for(int i = 0; i < NUM_LEDS; i++) {
-          finalleds[i] = leds[i];
-        }
+        id(zmatrix_id).copy_leds();
 
-        showTime(timeColor, time.hour, time.minute, -1);
+        id(zmatrix_id).showTime(timeColor, time.hour, time.minute, -1);
         for (int x = 0; x < 16; x++) {
           for (int y = 0; y < 16; y++) {
-            it.draw_pixel_at(x, y, Color(finalleds[XY(x, y)].red * brightness, finalleds[XY(x, y)].green * brightness, finalleds[XY(x, y)].blue * brightness));
+            it.draw_pixel_at(x, y, id(zmatrix_id).get_finalled(x, y, brightness));
           }
         }
       }
 
 animation:
-  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/animations/aurora-levin.gif"
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/refs/heads/main/animations/aurora-levin.gif"
     id: aurora
     resize: 16x16
     type: RGB565
-  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/animations/zreclusive.gif"
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/refs/heads/main/animations/zreclusive.gif"
     id: emoji
     resize: 16x16
     type: RGB565
     transparency: chroma_key
-  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/animations/color1wave.gif"
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/refs/heads/main/animations/color1wave.gif"
     id: colorwave
     resize: 16x16
     type: RGB565
-  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/animations/fractal.gif"
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/refs/heads/main/animations/fractal.gif"
     id: fractal
     resize: 16x16
     type: RGB565
-  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/animations/warp.gif"
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/refs/heads/main/animations/warp.gif"
     id: warp
     resize: 16x16
     type: RGB565
