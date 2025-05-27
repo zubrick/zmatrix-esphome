@@ -21,6 +21,7 @@ external_components:
   #- source: zmatrix-esphome/components
   - source: github://zubrick/zmatrix-esphome@main
     components: [ ds3231, zmatrix ]
+    refresh: 10min
 
 ds3231:
   id: ds3231_time
