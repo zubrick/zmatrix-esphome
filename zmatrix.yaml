@@ -4,7 +4,7 @@ esphome:
   name: ${name}
   friendly_name: ${friendly_name}
   includes:
-    - "src/zmatrix.h"
+    - "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/src/zmatrix.h"
   on_boot:
     - priority: 500
       then:
