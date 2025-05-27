@@ -1,0 +1,372 @@
+
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  includes:
+    - "src/zmatrix.h"
+  on_boot:
+    - priority: 500
+      then:
+        - lambda:
+            id(esp_started) = 1;
+
+globals:
+  - id: esp_started
+    type: int
+    restore_value: no
+    initial_value: '0'
+
+i2c:
+
+external_components:
+  - source:
+      type: local
+      path: "components"
+
+ds3231:
+  id: ds3231_time
+  time_id: sntp_time
+  update_interval: 240min
+
+sensor:
+  - platform: adc
+    pin: ${adcsensorpin}
+    id: light_sensor
+    name: Light sensor
+    attenuation: 12db
+    device_class: illuminance
+    update_interval: 1s
+    unit_of_measurement: '%'
+    filters:
+      - lambda:
+          id(lightsensorvolts).publish_state(x);
+          return mapfloat(x, id(voltage_empty).state, id(voltage_full).state, 12, 100);
+      - clamp:
+          min_value: 12
+          max_value: 100
+      - lambda: return min(x, id(max_autobrightness).state);
+      - sliding_window_moving_average:
+          window_size: 10
+          send_every: 1
+  - platform: template
+    id: currenthue
+    name: Current Hue
+    unit_of_measurement: °
+  - platform: template
+    id: lightsensorvolts
+    name: Light Sensor volts
+    unit_of_measurement: V
+    accuracy_decimals: 2
+  - platform: template
+    id: currentbrightness
+    name: Current Brightness
+    unit_of_measurement: '%'
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: "Europe/Zurich"
+
+light:
+  - platform: neopixelbus
+    variant: WS2812X
+    pin: ${lightpin}
+    num_leds: 256
+    type: GRB
+    id: led_matrix_light
+    internal: True
+    restore_mode: ALWAYS_OFF
+  - platform: rgb
+    name: Forced Color
+    id: forcedcolor
+    red: fred
+    green: fgreen
+    blue: fblue
+    restore_mode: RESTORE_DEFAULT_OFF
+
+output:
+  - platform: template
+    id: fred
+    type: float
+    write_action:
+      then:
+        - lambda:
+            id(nfred).publish_state(state);
+            id(nfhue).publish_state(RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
+  - platform: template
+    id: fgreen
+    type: float
+    write_action:
+      then:
+        - lambda:
+            id(nfgreen).publish_state(state);
+            id(nfhue).publish_state(RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
+  - platform: template
+    id: fblue
+    type: float
+    write_action:
+      then:
+        - lambda:
+            id(nfblue).publish_state(state);
+            id(nfhue).publish_state(RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
+
+select:
+  - platform: template
+    name: Animation
+    id: animationselect
+    optimistic: True
+    restore_value: True
+    initial_option: randomColor
+    options:
+      - randomColor
+      - theMatrix
+      - fire
+      - anim_aurora
+      - anim_emoji
+      - anim_colorwave
+      - anim_fractal
+      - anim_warp
+    on_value:
+      then:
+        - lambda: |-
+            previousTime = 0;
+            if (id(animationselect).active_index() > 2) {
+              gifanimstart = 0;
+              gifanim = 1;
+            } else {
+              gifanim = 0;
+              gifanimstart = 0;
+              gifanimPrevMode = id(animationselect).active_index().value();
+            }
+
+number:
+  - platform: template
+    name: Color Variance
+    id: variance
+    min_value: 0
+    max_value: 100
+    step: 1
+    restore_value: True
+    initial_value: 10
+    optimistic: True
+  - platform: template
+    name: Max Autobrightness
+    id: max_autobrightness
+    min_value: 12
+    max_value: 100
+    step: 1
+    restore_value: True
+    initial_value: 90
+    optimistic: True
+  - platform: template
+    name: Animation Speed
+    id: animspeed
+    min_value: 1
+    max_value: 10
+    step: 1
+    restore_value: True
+    initial_value: 5
+    optimistic: True
+  - platform: template
+    name: Color Speed
+    id: colorspeed
+    min_value: 100
+    max_value: 2000
+    step: 100
+    restore_value: True
+    initial_value: 600
+    optimistic: True
+  - platform: template
+    name: Voltage Full
+    id: voltage_full
+    min_value: 0.1
+    max_value: 2.7
+    step: 0.01
+    restore_value: True
+    initial_value: 0.6
+    optimistic: True
+  - platform: template
+    name: Voltage Empty
+    id: voltage_empty
+    min_value: 0.1
+    max_value: 2.7
+    step: 0.01
+    restore_value: True
+    initial_value: 0.14
+    optimistic: True
+  - platform: template
+    name: Gif animation time (s)
+    id: gif_animation_time
+    min_value: 0
+    max_value: 60
+    step: 1
+    restore_value: True
+    initial_value: 10
+    optimistic: True
+
+  - platform: template
+    id: nfred
+    internal: True
+    optimistic: True
+    step: 0.1
+    max_value: 256
+    min_value: 0
+  - platform: template
+    id: nfgreen
+    internal: True
+    optimistic: True
+    step: 0.1
+    max_value: 256
+    min_value: 0
+  - platform: template
+    id: nfblue
+    internal: True
+    optimistic: True
+    step: 0.1
+    max_value: 256
+    min_value: 0
+  - platform: template
+    id: nfhue
+    internal: True
+    optimistic: True
+    step: 0.1
+    max_value: 360
+    min_value: 0
+
+switch:
+  - platform: template
+    id: forcebrightness
+    name: Force brightness
+    optimistic: True
+    restore_mode: RESTORE_DEFAULT_OFF
+
+display:
+  - platform: addressable_light
+    id: led_matrix_display
+    addressable_light_id: led_matrix_light
+    width: 16
+    height: 16
+    rotation: 180°
+    update_interval: 16ms
+    auto_clear_enabled: false
+    pixel_mapper: |-
+      return XY(x, y);
+    lambda: |-
+      if (id(esp_started) == 0) {
+        it.fill(COLOR_OFF);
+      } else if (gifanim != 0) {
+        if (gifanimstart == 0) {
+          it.fill(COLOR_OFF);
+          if (id(animationselect).active_index() == 3) {
+            it.image(0, 0, id(aurora), COLOR_ON, COLOR_OFF);
+          } else if (id(animationselect).active_index() == 4) {
+            it.image(0, 0, id(emoji), COLOR_ON, COLOR_OFF);
+          } else if (id(animationselect).active_index() == 5) {
+            it.image(0, 0, id(colorwave), COLOR_ON, COLOR_OFF);
+          } else if (id(animationselect).active_index() == 6) {
+            it.image(0, 0, id(fractal), COLOR_ON, COLOR_OFF);
+          } else if (id(animationselect).active_index() == 7) {
+            it.image(0, 0, id(warp), COLOR_ON, COLOR_OFF);
+          }
+          gifanimstart = millis();
+          gifanimlastframe = millis();
+        } else {
+          if (id(gif_animation_time).state > 0 && gifanimstart + 1000 * id(gif_animation_time).state < millis()) {
+            gifanim = 0;
+            gifanimstart = 0;
+            auto call = id(animationselect).make_call();
+            auto option = id(animationselect).at((uint)gifanimPrevMode);
+            call.set_option(option.value());
+            call.perform();
+            //ESP_LOGD("display", "animation finished");
+          } else if (gifanimlastframe + 50 < millis()) {
+            //ESP_LOGD("display", "frame");
+            if (id(animationselect).active_index() == 3) {
+              id(aurora).next_frame();
+              it.image(0, 0, id(aurora), COLOR_ON, COLOR_OFF);
+            } else if (id(animationselect).active_index() == 4) {
+              id(emoji).next_frame();
+              it.image(0, 0, id(emoji), COLOR_ON, COLOR_OFF);
+            } else if (id(animationselect).active_index() == 5) {
+              id(colorwave).next_frame();
+              it.image(0, 0, id(colorwave), COLOR_ON, COLOR_OFF);
+            } else if (id(animationselect).active_index() == 6) {
+              id(fractal).next_frame();
+              it.image(0, 0, id(fractal), COLOR_ON, COLOR_OFF);
+            } else if (id(animationselect).active_index() == 7) {
+              id(warp).next_frame();
+              it.image(0, 0, id(warp), COLOR_ON, COLOR_OFF);
+            }
+            gifanimlastframe = millis();
+          }
+        }
+      } else {
+        Color timeColor = Color(240, 240 ,240);
+        uint8_t val = (int)(64 + (float)millis()/(float)(id(colorspeed).state*10))%256;
+        auto time = id(ds3231_time).get_time();
+
+        if (id(forcedcolor).current_values.is_on()) {
+          val = (int)(id(nfhue).state*256/360);
+        }
+        if (id(currenthue).state != (val*360/256)) {
+          id(currenthue).publish_state(val*360/256);
+        }
+        if (time.day == 1 && time.month == 8) {
+          nationalDay();
+        } else {
+          if (id(animationselect).active_index() == 0) {
+            randColor(val, id(variance).state, id(animspeed).state*1000);
+          } else if (id(animationselect).active_index() == 1) {
+            matrix();
+          } else if (id(animationselect).active_index() == 2) {
+            fire();
+          }
+        }
+
+
+        float brightness = id(light_sensor).state/100;
+        if (id(forcebrightness).state) {
+          if (id(forcedcolor).current_values.is_on()) {
+            brightness = id(forcedcolor).current_values.get_brightness();
+          } else {
+            brightness = 0.0;
+          }
+        }
+        if (id(currentbrightness).state != (brightness*100)) {
+          id(currentbrightness).publish_state(brightness*100);
+        }
+        for(int i = 0; i < NUM_LEDS; i++) {
+          finalleds[i] = leds[i];
+        }
+
+        showTime(timeColor, time.hour, time.minute, -1);
+        for (int x = 0; x < 16; x++) {
+          for (int y = 0; y < 16; y++) {
+            it.draw_pixel_at(x, y, Color(finalleds[XY(x, y)].red * brightness, finalleds[XY(x, y)].green * brightness, finalleds[XY(x, y)].blue * brightness));
+          }
+        }
+      }
+
+animation:
+  - file: "animations/aurora-levin.gif"
+    id: aurora
+    resize: 16x16
+    type: RGB565
+  - file: "animations/zreclusive.gif"
+    id: emoji
+    resize: 16x16
+    type: RGB565
+    transparency: chroma_key
+  - file: "animations/color1wave.gif"
+    id: colorwave
+    resize: 16x16
+    type: RGB565
+  - file: "animations/fractal.gif"
+    id: fractal
+    resize: 16x16
+    type: RGB565
+  - file: "animations/warp.gif"
+    id: warp
+    resize: 16x16
+    type: RGB565
