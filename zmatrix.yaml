@@ -18,9 +18,9 @@ globals:
 i2c:
 
 external_components:
-  - source: zmatrix-esphome/components
-  #- source: github://zubrick/zmatrix-esphome@main
-  #  components: [ ds3231 ]
+  #- source: zmatrix-esphome/components
+  - source: github://zubrick/zmatrix-esphome@main
+    components: [ ds3231, zmatrix ]
 
 ds3231:
   id: ds3231_time
