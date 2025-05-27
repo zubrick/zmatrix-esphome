@@ -7,11 +7,11 @@ CONF_HEIGHT = "height"
 CONF_SEGMENT_SIZE = "segment_size"
 
 zmatrix_ns = cg.esphome_ns.namespace("zmatrix")
-ZMATRIX = zmatrix_ns.class_("ZMatrix", cg.Component)
+Zmatrix = zmatrix_ns.class_("ZMatrix", cg.Component)
 
 CONFIG_SCHEMA = cv.Schema(
     {
-        cv.GenerateID(): cv.declare_id(ZMATRIX),
+        cv.GenerateID(): cv.declare_id(Zmatrix),
         cv.Optional(CONF_WIDTH, default=16): cv.int_range(0, 256),
         cv.Optional(CONF_HEIGHT, default=16): cv.int_range(0, 256),
         cv.Optional(CONF_SEGMENT_SIZE, default=1): cv.int_range(0, 4),
