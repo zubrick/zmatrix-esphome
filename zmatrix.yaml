@@ -21,7 +21,7 @@ i2c:
 
 external_components:
   - source: github://zubrick/zmatrix-esphome@main
-    components: [ rtttl ]
+    components: [ ds3231 ]
 
 ds3231:
   id: ds3231_time
