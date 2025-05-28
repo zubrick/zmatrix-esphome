@@ -67,7 +67,14 @@ To build this, I use :
   previously also an SD card reader.
 * A good power supply (at least 5V/2A, a bit more would be nice)
 * A 1000pF capacitor between + and - to absorb spikes
+* a 100k resistor and an LDR light sensor for auto brightness [https://www.aliexpress.com/item/32760631393.html]
 
 If using the led matrix provided in the link, I have a 3D printed case
 for it available on MakerWorld.com
 [https://makerworld.com/en/models/1461440-zmatrix-case#profileId-1523869]
+
+### Result
+
+![zMatrix Picture](./resources/zmatrix_running.png)
+
+![zMatrix electronix](./resources/zmatrix-electronics.png)
