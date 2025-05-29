@@ -4,9 +4,14 @@ esphome:
   name: ${name}
   friendly_name: ${friendly_name}
   on_boot:
-    - priority: 500
+    - priority: 800
       then:
         - lambda:
+            id(led_matrix_display).set_enabled(false);
+    - priority: 250
+      then:
+        - lambda:
+            id(led_matrix_display).set_enabled(true);
             id(esp_started) = 1;
 
 globals:
