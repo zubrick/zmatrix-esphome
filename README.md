@@ -66,7 +66,7 @@ To build this, I use :
 * I use a custom made pcb to hold the ESP32, the RTC module and
   previously also an SD card reader.
 * A good power supply (at least 5V/2A, a bit more would be nice)
-* A 1000pF capacitor between + and - to absorb spikes
+* A 1000µF capacitor between + and - to absorb spikes
 * a 100k resistor and an LDR light sensor for auto brightness [https://www.aliexpress.com/item/32760631393.html]
 
 If using the led matrix provided in the link, I have a 3D printed case

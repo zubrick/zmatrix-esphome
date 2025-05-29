@@ -134,6 +134,9 @@ select:
       - anim_colorwave
       - anim_fractal
       - anim_warp
+      - anim_eq
+      - anim_1up
+      - anim_whoohoo
     on_value:
       then:
         - lambda: |-
@@ -268,6 +271,12 @@ display:
             it.image(0, 0, id(fractal), COLOR_ON, COLOR_OFF);
           } else if (id(animationselect).active_index() == 7) {
             it.image(0, 0, id(warp), COLOR_ON, COLOR_OFF);
+          } else if (id(animationselect).active_index() == 8) {
+            it.image(0, 0, id(eq), COLOR_ON, COLOR_OFF);
+          } else if (id(animationselect).active_index() == 9) {
+            it.image(0, 0, id(up1), COLOR_ON, COLOR_OFF);
+          } else if (id(animationselect).active_index() == 10) {
+            it.image(0, 0, id(whoohoo), COLOR_ON, COLOR_OFF);
           }
           id(zmatrix_id).gifanimstart = millis();
           id(zmatrix_id).gifanimlastframe = millis();
@@ -297,6 +306,15 @@ display:
             } else if (id(animationselect).active_index() == 7) {
               id(warp).next_frame();
               it.image(0, 0, id(warp), COLOR_ON, COLOR_OFF);
+            } else if (id(animationselect).active_index() == 8) {
+              id(eq).next_frame();
+              it.image(0, 0, id(eq), COLOR_ON, COLOR_OFF);
+            } else if (id(animationselect).active_index() == 9) {
+              id(up1).next_frame();
+              it.image(0, 0, id(up1), COLOR_ON, COLOR_OFF);
+            } else if (id(animationselect).active_index() == 10) {
+              id(whoohoo).next_frame();
+              it.image(0, 0, id(whoohoo), COLOR_ON, COLOR_OFF);
             }
             id(zmatrix_id).gifanimlastframe = millis();
           }
@@ -366,5 +384,17 @@ animation:
     type: RGB565
   - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/refs/heads/main/animations/warp.gif"
     id: warp
+    resize: 16x16
+    type: RGB565
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/refs/heads/main/animations/bdk_eq16x16.gif"
+    id: eq
+    resize: 16x16
+    type: RGB565
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/refs/heads/main/animations/1up.gif"
+    id: up1
+    resize: 16x16
+    type: RGB565
+  - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/refs/heads/main/animations/whoohoo.gif"
+    id: whoohoo
     resize: 16x16
     type: RGB565
