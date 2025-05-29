@@ -364,6 +364,13 @@ display:
         }
       }
 
+button:
+  - platform: template
+    id: resync_rtc
+    name: Re-Sync RTC module
+    on_press:
+      - lambda: id(ds3231_time).sync();
+
 animation:
   - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/refs/heads/main/animations/aurora-levin.gif"
     id: aurora

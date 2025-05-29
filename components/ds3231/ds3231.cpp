@@ -17,27 +17,31 @@ namespace esphome {
 
     void DS3231::loop() {
       if (this->lastUpdate + this->update_interval_min_ * 60000 < millis()) {
-        this->lastUpdate= millis();
-        auto now = this->rtc_->now();
-        if (now.is_valid()) {
-          this->set_time(now.year, now.month, now.day_of_month, now.hour, now.minute, now.second, now.day_of_week);
-          ESP_LOGI("DS3231", "RTC time set to %04d-%02d-%02d %02d:%02d:%02d",
-                   now.year, now.month, now.day_of_month, now.hour, now.minute, now.second);
-        } else {
-          ESP_LOGE("DS3231", "SNTP time is not valid; cannot set RTC");
-        }
-        auto time = this->get_time();
-        if (time.year > 0) {
-          ESP_LOGI("DS3231", "Current RTC Time: %04d-%02d-%02d %02d:%02d:%02d",
-                   time.year, time.month, time.day, time.hour, time.minute, time.second);
-        } else {
-          ESP_LOGE("DS3231", "Failed to read time from RTC");
-        }
+        this->sync();
       }
     }
 
     void DS3231::dump_config(){
       ESP_LOGCONFIG(TAG, "DS3231 component");
+    }
+
+    void DS3231::sync() {
+      this->lastUpdate= millis();
+      auto now = this->rtc_->now();
+      if (now.is_valid()) {
+        this->set_time(now.year, now.month, now.day_of_month, now.hour, now.minute, now.second, now.day_of_week);
+        ESP_LOGI("DS3231", "RTC time set to %04d-%02d-%02d %02d:%02d:%02d",
+                 now.year, now.month, now.day_of_month, now.hour, now.minute, now.second);
+      } else {
+        ESP_LOGE("DS3231", "SNTP time is not valid; cannot set RTC");
+      }
+      auto time = this->get_time();
+      if (time.year > 0) {
+        ESP_LOGI("DS3231", "Current RTC Time: %04d-%02d-%02d %02d:%02d:%02d",
+                 time.year, time.month, time.day, time.hour, time.minute, time.second);
+      } else {
+        ESP_LOGE("DS3231", "Failed to read time from RTC");
+      }
     }
 
     void DS3231::set_time(int year, int month, int day, int hour, int minute, int second, int day_of_week) {

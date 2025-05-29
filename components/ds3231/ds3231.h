@@ -20,6 +20,9 @@ namespace esphome {
     public:
       void setup() override;
       void dump_config() override;
+
+      void sync();
+
       void set_time(int year, int month, int day, int hour, int minute, int second, int day_of_week);
       Time get_time();
       void set_i2c_address(const int address) { this->i2c_address = address;};
