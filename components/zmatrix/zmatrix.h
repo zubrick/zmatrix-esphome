@@ -32,6 +32,9 @@ namespace esphome {
       void select_index(size_t index);
       Color get_finalled(uint8_t x, uint8_t y, float brightness);
 
+      float set_light_sensor_val(float newval);
+      float get_light_sensor_val();
+
       uint16_t XY( uint8_t x, uint8_t y) {
         if ( (y & 0x01)) {
           return ((this->height - 1 - y) * this->width) + x;
@@ -60,6 +63,8 @@ namespace esphome {
       int height = 16;
       int num_leds = 256;
       int segmentSize = 1;
+      float light_sensor_values[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+      int light_sensor_value_index = 0;
 
       Color finalleds[NUM_LEDS];
       Color leds[NUM_LEDS];

@@ -12,6 +12,10 @@ namespace esphome {
 
     void ZMatrix::setup() {
       ESP_LOGI("ZMatrix", "Setup");
+      for(int i = 0; i < this->num_leds; i++) {
+        leds[i] = Color(0,0,0);
+        finalleds[i] = Color(0,0,0);
+      }
     }
 
     void ZMatrix::dump_config(){
@@ -320,6 +324,22 @@ namespace esphome {
       for(int i = 0; i < this->num_leds; i++) {
         this->finalleds[i] = this->leds[i];
       }
+    }
+
+    float ZMatrix::set_light_sensor_val(float newval) {
+      this->light_sensor_values[this->light_sensor_value_index] = newval;
+      this->light_sensor_value_index = (this->light_sensor_value_index + 1) % 10;
+      float avg = this->get_light_sensor_val();
+      ESP_LOGCONFIG(TAG, "avg %f", avg);
+      return avg;
+    }
+
+    float ZMatrix::get_light_sensor_val() {
+      float sum = 0;
+      for (int i = 0; i < 10; ++i) {
+        sum += this->light_sensor_values[i];
+      }
+      return sum/10;
     }
 
     void ZMatrix::select_index(size_t index) {

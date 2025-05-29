@@ -12,6 +12,7 @@ namespace esphome {
         ESP_LOGE("DS3231", "RTC not found at I2C address 0x68");
         return;
       }
+      this->found = true;
       ESP_LOGI("DS3231", "RTC found at I2C address 0x68");
     }
 
@@ -58,6 +59,11 @@ namespace esphome {
     }
 
     Time DS3231::get_time() {
+      if (!this->found) {
+        ESP_LOGE("DS3231", "No RTC module found to ge time from");
+        return Time{0, 0, 0, 0, 0, 0, 0};
+      }
+
       Wire.beginTransmission(this->i2c_address);
       Wire.write(0);  // Start at register 0
       Wire.endTransmission();

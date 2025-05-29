@@ -41,6 +41,8 @@ namespace esphome {
       int i2c_address = 0x68;
       uint8_t update_interval_min_ = 240;
       int lastUpdate = 0;
+      bool found = false;
+
       esphome::time::RealTimeClock *rtc_;
       uint8_t dec_to_bcd(int val);
 

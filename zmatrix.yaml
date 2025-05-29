@@ -4,14 +4,9 @@ esphome:
   name: ${name}
   friendly_name: ${friendly_name}
   on_boot:
-    - priority: 800
+    - priority: 500
       then:
         - lambda:
-            id(led_matrix_display).set_enabled(false);
-    - priority: 250
-      then:
-        - lambda:
-            id(led_matrix_display).set_enabled(true);
             id(esp_started) = 1;
 
 globals:
@@ -53,9 +48,7 @@ sensor:
           min_value: 12
           max_value: 100
       - lambda: return min(x, id(max_autobrightness).state);
-      - sliding_window_moving_average:
-          window_size: 10
-          send_every: 1
+      - lambda: return id(zmatrix_id).set_light_sensor_val(x);
   - platform: template
     id: currenthue
     name: Current Hue
@@ -343,7 +336,7 @@ display:
         }
 
 
-        float brightness = id(light_sensor).state/100;
+        float brightness = id(zmatrix_id).get_light_sensor_val()/100;
         if (id(forcebrightness).state) {
           if (id(forcedcolor).current_values.is_on()) {
             brightness = id(forcedcolor).current_values.get_brightness();
