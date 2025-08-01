@@ -135,7 +135,7 @@ namespace esphome {
       int time = 5000;
       int var = 10;
       int totTime = time;
-      int minBrightness = animBrightnessValue - 125;
+      int minBrightness = animBrightnessValue - 150;
       if (minBrightness < 0) minBrightness = 0;
       if(this->previousTime == 0) {
         for(int i = 0; i < this->num_leds; i++) {
