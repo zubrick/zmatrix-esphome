@@ -39,15 +39,12 @@ sensor:
     attenuation: 12db
     device_class: illuminance
     update_interval: 1s
-    unit_of_measurement: '%'
+    unit_of_measurement: "%"
     filters:
-      - lambda:
-          id(lightsensorvolts).publish_state(x);
-          return id(zmatrix_id).mapfloat(x, id(voltage_empty).state, id(voltage_full).state, 12, 100);
-      - clamp:
-          min_value: 12
-          max_value: 100
+      - lambda: id(lightsensorvolts).publish_state(x);
+          return id(zmatrix_id).mapfloat(x, id(voltage_empty).state, id(voltage_full).state, id(min_autobrightness).state, id(max_autobrightness).state);
       - lambda: return min(x, id(max_autobrightness).state);
+      - lambda: return max(x, id(min_autobrightness).state);
       - lambda: return id(zmatrix_id).set_light_sensor_val(x);
   - platform: template
     id: currenthue
@@ -61,7 +58,7 @@ sensor:
   - platform: template
     id: currentbrightness
     name: Current Brightness
-    unit_of_measurement: '%'
+    unit_of_measurement: "%"
 
 time:
   - platform: sntp
@@ -91,24 +88,21 @@ output:
     type: float
     write_action:
       then:
-        - lambda:
-            id(nfred).publish_state(state);
+        - lambda: id(nfred).publish_state(state);
             id(nfhue).publish_state(id(zmatrix_id).RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
   - platform: template
     id: fgreen
     type: float
     write_action:
       then:
-        - lambda:
-            id(nfgreen).publish_state(state);
+        - lambda: id(nfgreen).publish_state(state);
             id(nfhue).publish_state(id(zmatrix_id).RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
   - platform: template
     id: fblue
     type: float
     write_action:
       then:
-        - lambda:
-            id(nfblue).publish_state(state);
+        - lambda: id(nfblue).publish_state(state);
             id(nfhue).publish_state(id(zmatrix_id).RGB_to_H(id(nfred).state, id(nfgreen).state, id(nfblue).state));
 
 select:
@@ -135,7 +129,6 @@ select:
         - lambda: |-
             id(zmatrix_id).select_index(id(animationselect).active_index().value());
 
-
 number:
   - platform: template
     name: Color Variance
@@ -147,14 +140,34 @@ number:
     initial_value: 10
     optimistic: True
   - platform: template
-    name: Max Autobrightness
-    id: max_autobrightness
-    min_value: 12
-    max_value: 100
+    name: Digit brightness
+    id: digit_brightness
+    min_value: 0
+    max_value: 255
     step: 1
     restore_value: True
-    initial_value: 90
+    initial_value: 240
     optimistic: True
+  - platform: template
+    name: Max Autobrightness
+    id: max_autobrightness
+    min_value: 12.0
+    max_value: 100.0
+    step: 1.0
+    restore_value: True
+    initial_value: 90.0
+    optimistic: True
+    entity_category: config
+  - platform: template
+    name: Min Autobrightness
+    id: min_autobrightness
+    min_value: 0.0
+    max_value: 60.0
+    step: 1.0
+    restore_value: True
+    initial_value: 12.0
+    optimistic: True
+    entity_category: config
   - platform: template
     name: Animation Speed
     id: animspeed
@@ -164,6 +177,7 @@ number:
     restore_value: True
     initial_value: 5
     optimistic: True
+    entity_category: config
   - platform: template
     name: Color Speed
     id: colorspeed
@@ -173,6 +187,7 @@ number:
     restore_value: True
     initial_value: 600
     optimistic: True
+    entity_category: config
   - platform: template
     name: Voltage Full
     id: voltage_full
@@ -182,6 +197,7 @@ number:
     restore_value: True
     initial_value: 0.6
     optimistic: True
+    entity_category: config
   - platform: template
     name: Voltage Empty
     id: voltage_empty
@@ -191,6 +207,7 @@ number:
     restore_value: True
     initial_value: 0.14
     optimistic: True
+    entity_category: config
   - platform: template
     name: Gif animation time (s)
     id: gif_animation_time
@@ -200,6 +217,7 @@ number:
     restore_value: True
     initial_value: 10
     optimistic: True
+    entity_category: config
 
   - platform: template
     id: nfred
@@ -313,7 +331,7 @@ display:
           }
         }
       } else {
-        Color timeColor = Color(240, 240 ,240);
+        Color timeColor = Color(id(digit_brightness).state, id(digit_brightness).state ,id(digit_brightness).state);
         uint8_t val = (int)(64 + (float)millis()/(float)(id(colorspeed).state*10))%256;
         auto time = id(ds3231_time).get_time();
         //ESP_LOGD("display", "frame");
@@ -325,6 +343,7 @@ display:
         }
         if (time.day == 1 && time.month == 8) {
           id(zmatrix_id).nationalDay();
+          timeColor = Color(0,0,0);
         } else {
           if (id(animationselect).active_index() == 0) {
             id(zmatrix_id).randColor(val, id(variance).state, id(animspeed).state*1000);
@@ -363,6 +382,7 @@ button:
     name: Re-Sync RTC module
     on_press:
       - lambda: id(ds3231_time).sync();
+    entity_category: config
 
 animation:
   - file: "https://raw.githubusercontent.com/zubrick/zmatrix-esphome/refs/heads/main/animations/aurora-levin.gif"

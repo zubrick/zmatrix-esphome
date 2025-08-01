@@ -135,6 +135,8 @@ namespace esphome {
       int time = 5000;
       int var = 10;
       int totTime = time;
+      int minBrightness = animBrightnessValue - 125;
+      if (minBrightness < 0) minBrightness = 0;
       if(this->previousTime == 0) {
         for(int i = 0; i < this->num_leds; i++) {
           this->end[i] = this->leds[i];
@@ -144,19 +146,19 @@ namespace esphome {
         for (int y = 0; y < this->height; y++) {
           for (int x = 0; x < this->width; x++) {
             int c = 0;
-            if (y > 1 && y <= (this->height - 1)/3 && x > (this->width - 1)/3 && x <= this->width - (this->width - 1)/3) {
+            if (y > 1 && y <= (this->height - 1)/3 && x > (this->width - 1)/3 && x < this->width - (this->width - 1)/3 - 1) {
               c = 1;
-            } else if (y > (this->height - 1)/3 && y <= this->height - (this->height - 1)/3  && x > 1 && x <= this->width - 2) {
+            } else if (y > (this->height - 1)/3 && y < this->height - (this->height - 1)/3 - 1  && x > 1 && x < this->width - 2) {
               c = 1;
-            } else if (y > this->height - (this->height - 1)/3 && y <= this->height - 2 && x > (this->width - 1)/3 && x <= this->width - (this->width - 1)/3) {
+            } else if (y >= this->height - (this->height - 1)/3 - 1 && y < this->height - 2 && x > (this->width - 1)/3 && x < this->width - (this->width - 1)/3 - 1) {
               c = 1;
             }
 
             esphome::light::ESPHSVColor newcolor;
             if (c) {
-              newcolor = esphome::light::ESPHSVColor(0, 0, random(40, 90));
+              newcolor = esphome::light::ESPHSVColor(0, 0, random(minBrightness, animBrightnessValue));
             } else {
-              newcolor = esphome::light::ESPHSVColor(0, random(128, 255), random(40, 90));
+              newcolor = esphome::light::ESPHSVColor(0, random(128, 255), random(minBrightness, animBrightnessValue));
             }
             this->start[XY(x, y)] = this->end[XY(x, y)];
             this->end[XY(x, y)] = newcolor.to_rgb();
@@ -330,7 +332,6 @@ namespace esphome {
       this->light_sensor_values[this->light_sensor_value_index] = newval;
       this->light_sensor_value_index = (this->light_sensor_value_index + 1) % 10;
       float avg = this->get_light_sensor_val();
-      ESP_LOGCONFIG(TAG, "avg %f", avg);
       return avg;
     }
 
