@@ -12,7 +12,7 @@ CONFIG_SCHEMA = cv.Schema(
     {
         cv.GenerateID(): cv.declare_id(DS3231),
         cv.Optional(CONF_I2C_ADDRESS, default=0x68): cv.int_range(0x00, 0xff),
-        cv.GenerateID(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
+        cv.Optional(CONF_TIME_ID): cv.use_id(time.RealTimeClock),
         cv.Optional( CONF_UPDATE_INTERVAL): cv.positive_time_period_minutes,
     }
 ).extend(cv.COMPONENT_SCHEMA)
@@ -20,9 +20,11 @@ CONFIG_SCHEMA = cv.Schema(
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
-    reftime = await cg.get_variable(config[CONF_TIME_ID])
     await cg.register_component(var, config)
+    if rf := config.get(CONF_TIME_ID):
+        reftime = await cg.get_variable(rf)
+        cg.add(var.set_reftime(reftime))
+    if inter := config.get(CONF_UPDATE_INTERVAL):
+        cg.add(var.set_update_interval_min(inter))
 
     cg.add(var.set_i2c_address(config[CONF_I2C_ADDRESS]))
-    cg.add(var.set_reftime(reftime))
-    cg.add(var.set_update_interval_min(config[CONF_UPDATE_INTERVAL]))

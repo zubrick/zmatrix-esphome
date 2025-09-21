@@ -1,4 +1,4 @@
-# zMatrix let matrix clock for ESPHome
+# zMatrix led matrix clock for ESPHome
 
 This repository is for porting my 16x16 led matrix clock to esphome so
 I can interact with it directly from automations.

@@ -25,8 +25,17 @@ external_components:
 
 ds3231:
   id: ds3231_time
+
+  # Source for NTP to ds3231
   time_id: sntp_time
+  # optional ntp source.
+  # No sync or update_interval possible if not set
+
+  # NTP to ds3231 update interval
   update_interval: 240min
+  # default is no auto update
+  # has no effect if no time_id is set
+  # manuel update possible if time_id is set regardless of update_interval
 
 zmatrix:
   id: zmatrix_id
