@@ -2,24 +2,27 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/time/real_time_clock.h"
+#include "esphome/components/i2c/i2c.h"
 
 namespace esphome {
   namespace ds3231 {
 
     struct Time {
-          int year;
-          int month;
-          int day;
-          int hour;
-          int minute;
           int second;
+          int minute;
+          int hour;
           int day_of_week;
+          int day;
+          int month;
+          int year;
         };
 
-    class DS3231 : public Component {
+    class DS3231 : public time::RealTimeClock, public i2c::I2CDevice {
     public:
       void setup() override;
       void dump_config() override;
+      void update() override;
+      ESPTime now();
 
       void sync();
 
@@ -32,15 +35,18 @@ namespace esphome {
 
       void set_update_interval(uint32_t val) { /* ignore */
       }
-      void set_update_interval_min(uint8_t update_interval_min) {this->update_interval_min_ = update_interval_min;}
+      void set_update_interval_min(uint32_t update_interval_min) {this->update_interval_min_ = update_interval_min;}
+      void set_read_interval_min(uint32_t read_interval_min) {this->read_interval_min_ = read_interval_min;}
 
     protected:
       void loop() override;
 
     private:
       int i2c_address = 0x68;
-      uint8_t update_interval_min_ = 0;
+      uint32_t update_interval_min_ = 0;
       int lastUpdate = 0;
+      uint32_t read_interval_min_ = 15;
+      int lastRead = 0;
       bool found = false;
 
       esphome::time::RealTimeClock *rtc_ = NULL;

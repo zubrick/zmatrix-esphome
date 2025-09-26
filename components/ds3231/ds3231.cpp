@@ -1,4 +1,5 @@
 #include "esphome/core/log.h"
+#include "esphome/core/time.h"
 #include "ds3231.h"
 #include <Wire.h>
 
@@ -9,21 +10,30 @@ namespace esphome {
 
     void DS3231::setup() {
       if (!Wire.requestFrom(this->i2c_address, 1)) {
-        ESP_LOGE("DS3231", "RTC not found at I2C address 0x68");
+        ESP_LOGE("DS3231", "RTC not found at I2C address 0x%x", this->i2c_address);
         return;
       }
       this->found = true;
-      ESP_LOGI("DS3231", "RTC found at I2C address 0x68");
+      ESP_LOGI("DS3231", "RTC found at I2C address 0x%x", this->i2c_address);
     }
 
     void DS3231::loop() {
       if (this->update_interval_min_ > 0 && (this->lastUpdate + this->update_interval_min_ * 60000 < millis())) {
         this->sync();
       }
+      if (this->read_interval_min_ > 0 && (this->lastRead + this->read_interval_min_ * 60000 < millis())) {
+        time::RealTimeClock::synchronize_epoch_(this->now().timestamp);
+        this->lastRead = millis();
+      }
+    }
+
+    void DS3231::update() {
+      //time::RealTimeClock::synchronize_epoch_(this->now());
     }
 
     void DS3231::dump_config(){
       ESP_LOGCONFIG(TAG, "DS3231 component");
+      //ESP_LOGCONFIG(TAG, "  timezone: %s", this->timezone_.c_str());
     }
 
     void DS3231::sync() {
@@ -62,7 +72,7 @@ namespace esphome {
 
     Time DS3231::get_time() {
       if (!this->found) {
-        ESP_LOGE("DS3231", "No RTC module found to ge time from");
+        ESP_LOGE("DS3231", "No RTC module found to get time from");
         return Time{0, 0, 0, 0, 0, 0, 0};
       }
 
@@ -75,15 +85,39 @@ namespace esphome {
         return Time{0, 0, 0, 0, 0, 0, 0};
       }
 
-      uint8_t second = this->bcd_to_dec(Wire.read());
-      uint8_t minute = this->bcd_to_dec(Wire.read());
-      uint8_t hour = this->bcd_to_dec(Wire.read());
-      uint8_t day_of_week = this->bcd_to_dec(Wire.read());
-      uint8_t day = this->bcd_to_dec(Wire.read());
-      uint8_t month = this->bcd_to_dec(Wire.read());
-      uint16_t year = this->bcd_to_dec(Wire.read()) + 2000;
+      Time t{
+        .second = this->bcd_to_dec(Wire.read()),
+        .minute = this->bcd_to_dec(Wire.read()),
+        .hour = this->bcd_to_dec(Wire.read()),
+        .day_of_week = this->bcd_to_dec(Wire.read()),
+        .day = this->bcd_to_dec(Wire.read()),
+        .month = this->bcd_to_dec(Wire.read()),
+        .year = this->bcd_to_dec(Wire.read()) + 2000
+      };
 
-      return Time{year, month, day, hour, minute, second, day_of_week};
+      return t;
+    }
+
+    ESPTime DS3231::now() {
+      Time t = this->get_time();
+      ESPTime rtc_time{
+        .second = (uint8_t)t.second,
+        .minute = (uint8_t)t.minute,
+        .hour = (uint8_t)t.hour,
+        .day_of_week = (uint8_t)t.day_of_week,
+        .day_of_month = (uint8_t)t.day,
+        .day_of_year = 1,
+        .month = (uint8_t)t.month,
+        .year = (uint16_t)t.year,
+        .is_dst = false,  // not used
+        .timestamp = 0    // overwritten by recalc_timestamp_utc(false)
+      };
+      rtc_time.recalc_timestamp_utc(false);
+      if (!rtc_time.is_valid()) {
+        ESP_LOGE(TAG, "Invalid RTC time, not syncing to system clock.");
+        return ESPTime{};
+      }
+      return rtc_time;
     }
 
     uint8_t DS3231::dec_to_bcd(int val) {

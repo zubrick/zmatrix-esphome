@@ -23,20 +23,6 @@ external_components:
     components: [ ds3231, zmatrix ]
     refresh: 10min
 
-ds3231:
-  id: ds3231_time
-
-  # Source for NTP to ds3231
-  time_id: sntp_time
-  # optional ntp source.
-  # No sync or update_interval possible if not set
-
-  # NTP to ds3231 update interval
-  update_interval: 240min
-  # default is no auto update
-  # has no effect if no time_id is set
-  # manuel update possible if time_id is set regardless of update_interval
-
 zmatrix:
   id: zmatrix_id
 
@@ -73,6 +59,29 @@ time:
   - platform: sntp
     id: sntp_time
     timezone: "Europe/Zurich"
+
+  - platform: ds3231
+    id: ds3231_time
+
+    # Source for NTP to ds3231
+    time_id: sntp_time
+    # optional ntp source.
+    # No sync or update_interval possible if not set
+
+    # NTP to ds3231 update interval
+    update_interval: 240min
+    # default is no auto update
+    # has no effect if no time_id is set
+    # manuel update possible if time_id is set regardless of
+    # update_interval
+
+    # ds3231 read interval
+    polling_interval: 5min
+    # default is 5 minutes
+    # sets the interval to read the rtc chip and update internal clock
+    # set to 0 to disable antomatic read and only read time with the
+    # get_time() method
+
 
 light:
   - platform: neopixelbus
