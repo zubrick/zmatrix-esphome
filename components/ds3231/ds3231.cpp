@@ -1,7 +1,6 @@
 #include "esphome/core/log.h"
 #include "esphome/core/time.h"
 #include "ds3231.h"
-#include <Wire.h>
 
 namespace esphome {
   namespace ds3231 {
@@ -9,12 +8,14 @@ namespace esphome {
     static const char *TAG = "ds3231.component";
 
     void DS3231::setup() {
-      if (!Wire.requestFrom(this->i2c_address, 1)) {
-        ESP_LOGE("DS3231", "RTC not found at I2C address 0x%x", this->i2c_address);
+      ESP_LOGI("DS3231", "Setup");
+      if (!this->read_rtc_()) {
+        ESP_LOGE("DS3231", "RTC not found at I2C address");
+        this->mark_failed();
         return;
       }
       this->found = true;
-      ESP_LOGI("DS3231", "RTC found at I2C address 0x%x", this->i2c_address);
+      ESP_LOGI("DS3231", "RTC found at I2C address");
     }
 
     void DS3231::loop() {
@@ -58,41 +59,46 @@ namespace esphome {
     }
 
     void DS3231::set_time(int year, int month, int day, int hour, int minute, int second, int day_of_week) {
-      Wire.beginTransmission(this->i2c_address);
-      Wire.write(0);  // Start at register 0
-      Wire.write(this->dec_to_bcd(second));        // Seconds
-      Wire.write(this->dec_to_bcd(minute));        // Minutes
-      Wire.write(this->dec_to_bcd(hour));          // Hours
-      Wire.write(this->dec_to_bcd(day_of_week));   // Day of the week
-      Wire.write(this->dec_to_bcd(day));           // Day of the month
-      Wire.write(this->dec_to_bcd(month));         // Month
-      Wire.write(this->dec_to_bcd(year - 2000));   // Year
-      Wire.endTransmission();
+      uint8_t tmpbuffer[7];
+      tmpbuffer[0] = this->dec_to_bcd(second);
+      tmpbuffer[1] = this->dec_to_bcd(minute);
+      tmpbuffer[2] = this->dec_to_bcd(hour);
+      tmpbuffer[3] = this->dec_to_bcd(day_of_week);
+      tmpbuffer[4] = this->dec_to_bcd(day);
+      tmpbuffer[5] = this->dec_to_bcd(month);
+      tmpbuffer[6] = this->dec_to_bcd(year - 2000);
+      if (!this->write_bytes(0, tmpbuffer, 7)) {
+        ESP_LOGE("DS3231", "Can't write I2C data.");
+      }
+    }
+
+    bool DS3231::read_rtc_() {
+      if (!this->read_bytes(0, this->databuffer, 7)) {
+        ESP_LOGE("DS3231", "Can't read I2C data.");
+        return false;
+      }
+      return true;
     }
 
     Time DS3231::get_time() {
-      if (!this->found) {
+      /*if (!this->found) {
         ESP_LOGE("DS3231", "No RTC module found to get time from");
         return Time{0, 0, 0, 0, 0, 0, 0};
-      }
+      }*/
 
-      Wire.beginTransmission(this->i2c_address);
-      Wire.write(0);  // Start at register 0
-      Wire.endTransmission();
-
-      if (Wire.requestFrom(0x68, 7) != 7) {
+      if (!this->read_rtc_()) {
         ESP_LOGE("DS3231", "Failed to read time registers");
         return Time{0, 0, 0, 0, 0, 0, 0};
       }
 
       Time t{
-        .second = this->bcd_to_dec(Wire.read()),
-        .minute = this->bcd_to_dec(Wire.read()),
-        .hour = this->bcd_to_dec(Wire.read()),
-        .day_of_week = this->bcd_to_dec(Wire.read()),
-        .day = this->bcd_to_dec(Wire.read()),
-        .month = this->bcd_to_dec(Wire.read()),
-        .year = this->bcd_to_dec(Wire.read()) + 2000
+        .second = this->bcd_to_dec(this->databuffer[0]),
+        .minute = this->bcd_to_dec(this->databuffer[1]),
+        .hour = this->bcd_to_dec(this->databuffer[2]),
+        .day_of_week = this->bcd_to_dec(this->databuffer[3]),
+        .day = this->bcd_to_dec(this->databuffer[4]),
+        .month = this->bcd_to_dec(this->databuffer[5]),
+        .year = this->bcd_to_dec(this->databuffer[6]) + 2000
       };
 
       return t;

@@ -24,11 +24,12 @@ namespace esphome {
       void update() override;
       ESPTime now();
 
+      bool read_rtc_();
+
       void sync();
 
       void set_time(int year, int month, int day, int hour, int minute, int second, int day_of_week);
       Time get_time();
-      void set_i2c_address(const int address) { this->i2c_address = address;};
       void set_reftime(esphome::time::RealTimeClock *rtc) { this->rtc_ = rtc; }
 
       float get_setup_priority() const override { return esphome::setup_priority::PROCESSOR; }
@@ -42,12 +43,12 @@ namespace esphome {
       void loop() override;
 
     private:
-      int i2c_address = 0x68;
       uint32_t update_interval_min_ = 0;
       int lastUpdate = 0;
-      uint32_t read_interval_min_ = 15;
+      uint32_t read_interval_min_ = 0;
       int lastRead = 0;
       bool found = false;
+      uint8_t databuffer[7];
 
       esphome::time::RealTimeClock *rtc_ = NULL;
       uint8_t dec_to_bcd(int val);
