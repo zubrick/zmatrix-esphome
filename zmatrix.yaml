@@ -1,19 +1,16 @@
-
-
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
   on_boot:
     - priority: 500
       then:
-        - lambda:
-            id(esp_started) = 1;
+        - lambda: id(esp_started) = 1;
 
 globals:
   - id: esp_started
     type: int
     restore_value: no
-    initial_value: '0'
+    initial_value: "0"
 
 i2c:
 
@@ -35,6 +32,7 @@ sensor:
     device_class: illuminance
     update_interval: 1s
     unit_of_measurement: "%"
+    accuracy_decimals: 4
     filters:
       - lambda: id(lightsensorvolts).publish_state(x);
           return id(zmatrix_id).mapfloat(x, id(voltage_empty).state, id(voltage_full).state, id(min_autobrightness).state, id(max_autobrightness).state);
@@ -49,34 +47,33 @@ sensor:
     id: lightsensorvolts
     name: Light Sensor volts
     unit_of_measurement: V
-    accuracy_decimals: 2
+    accuracy_decimals: 4
   - platform: template
     id: currentbrightness
     name: Current Brightness
     unit_of_measurement: "%"
 
 time:
-  - platform: sntp
-    id: sntp_time
-    timezone: "Europe/Zurich"
+  - platform: homeassistant
+    id: homeassistant_time
 
   - platform: ds3231
     id: ds3231_time
 
     # Source for NTP to ds3231
-    time_id: sntp_time
+    time_id: homeassistant_time
     # optional ntp source.
     # No sync or update_interval possible if not set
 
     # NTP to ds3231 update interval
-    update_interval: 240min
+    update_interval: 120min
     # default is no auto update
     # has no effect if no time_id is set
     # manuel update possible if time_id is set regardless of
     # update_interval
 
     # ds3231 read interval
-    polling_interval: 5min
+    polling_interval: 0s
     # default is 5 minutes
     # sets the interval to read the rtc chip and update internal clock
     # set to 0 to disable antomatic read and only read time with the
@@ -221,7 +218,7 @@ number:
     id: voltage_empty
     min_value: 0.1
     max_value: 2.7
-    step: 0.01
+    step: 0.001
     restore_value: True
     initial_value: 0.14
     optimistic: True
@@ -349,7 +346,19 @@ display:
           }
         }
       } else {
+        float brightness = id(zmatrix_id).get_light_sensor_val()/100;
+        if (id(forcebrightness).state) {
+          if (id(forcedcolor).current_values.is_on()) {
+            brightness = id(forcedcolor).current_values.get_brightness();
+          } else {
+            brightness = 0.0;
+          }
+        }
+        if (id(currentbrightness).state != (brightness*100)) {
+          id(currentbrightness).publish_state(brightness*100);
+        }
         Color timeColor = Color(id(digit_brightness).state, id(digit_brightness).state ,id(digit_brightness).state);
+
         uint8_t val = (int)(64 + (float)millis()/(float)(id(colorspeed).state*10))%256;
         auto time = id(ds3231_time).get_time();
         //ESP_LOGD("display", "frame");
@@ -362,6 +371,9 @@ display:
         if (time.day == 1 && time.month == 8) {
           id(zmatrix_id).nationalDay();
           timeColor = Color(0,0,0);
+        } else if (id(currentbrightness).state < id(min_autobrightness).state + 0.5) {
+          id(zmatrix_id).empty();
+          timeColor = Color(id(digit_brightness).state, 0, 0);
         } else {
           if (id(animationselect).active_index() == 0) {
             id(zmatrix_id).randColor(val, id(variance).state, id(animspeed).state*1000);
@@ -372,20 +384,7 @@ display:
           }
         }
 
-
-        float brightness = id(zmatrix_id).get_light_sensor_val()/100;
-        if (id(forcebrightness).state) {
-          if (id(forcedcolor).current_values.is_on()) {
-            brightness = id(forcedcolor).current_values.get_brightness();
-          } else {
-            brightness = 0.0;
-          }
-        }
-        if (id(currentbrightness).state != (brightness*100)) {
-          id(currentbrightness).publish_state(brightness*100);
-        }
         id(zmatrix_id).copy_leds();
-
         id(zmatrix_id).showTime(timeColor, time.hour, time.minute, -1);
         for (int x = 0; x < 16; x++) {
           for (int y = 0; y < 16; y++) {

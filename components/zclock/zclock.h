@@ -27,6 +27,10 @@ namespace esphome {
       void setTimeColor(esphome::Color color);
       void setDateColor(esphome::Color color);
 
+      float mapfloat(float x, float in_min, float in_max, float out_min, float out_max) {
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+      }
+
       String get_date() {return this->_date_string;}
 
       uint16_t getxo() { return xo; }

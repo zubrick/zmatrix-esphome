@@ -23,6 +23,7 @@ namespace esphome {
       void matrix();
       void nationalDay();
       void fire();
+      void empty();
 
       float get_setup_priority() const override { return esphome::setup_priority::PROCESSOR; }
 

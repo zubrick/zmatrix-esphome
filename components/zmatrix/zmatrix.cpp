@@ -176,6 +176,12 @@ namespace esphome {
       }
     }
 
+    void ZMatrix::empty() {
+      for(int i = 0; i < this->num_leds; i++) {
+        this->leds[i] = Color(0, 0, 0);
+      }
+    }
+
     void ZMatrix::fire() {
       const bool colmajor = false;
       const bool mattop = false;
