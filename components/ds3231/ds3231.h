@@ -3,6 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/components/time/real_time_clock.h"
 #include "esphome/components/i2c/i2c.h"
+#include "esphome/core/hal.h"
 
 namespace esphome {
   namespace ds3231 {
